@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "bacode"
+version = "0.1.0"
+description = "Code of my Bachelor-Thesis"
+authors = ["Cytoxic99 <aaronh@ethz.ch>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.13"
+open3d = "^0.17.0"
+opencv-python = "^4.8.1.78"
+scikit-learn = "^1.3.1"
+pyyaml = "^6.0.1"
+addict = "^2.4.0"
+pillow = "^10.0.1"
+numpy = "^1.26.0"
+pandas = "^2.1.1"
+tqdm = "^4.66.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
