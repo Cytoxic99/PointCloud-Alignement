@@ -5,6 +5,7 @@ from clusterer import Clusterer
 import open3d as o3d
 import numpy as np
 from icecream import ic
+from room_segmentation import roomSegmenter
 
 
 if __name__ == "__main__":
@@ -14,18 +15,20 @@ if __name__ == "__main__":
     scan_path = "data\Scaled_SpatialMapping.xyz"
     voxel_size = 100
     
-    source, target, source_down, target_down, source_fpfh, target_fpfh = Preparer(model_path, scan_path).prepare_dataset(voxel_size)
+    source, target, source_down, target_down = Preparer(model_path, scan_path).prepare_dataset(voxel_size)
     
-    registrator = Registrate(source_down, target_down, source_fpfh, target_fpfh, voxel_size)
-
-    #registrator.execute_global_registration()
-    #visualizer.draw_registration_result(source_down, target, registrator.globalTransformation)
+    #Extract Table and other features from pcd
+    #clusterer = Clusterer(target_down)
+    #pcd, _ = clusterer.clustering()
+    #visualizer.draw_pointcloud(pcd)
+    
+    registrator = Registrate(source_down, target_down, voxel_size)
    
-    rotation_matrix_4x4 = np.eye(4)
     rotation_matrix = registrator.registrate_rotation()
-    rotation_matrix_4x4[:3, :3] = rotation_matrix
-    rotation_matrix_4x4[3, 3] = 1
     
-    visualizer.draw_registration_result(source, target, rotation_matrix_4x4)
+    visualizer.draw_registration_result(source, target, rotation_matrix)
+    
+    segmenter = roomSegmenter(source_down)
+    segmenter.load_pcd()
     
     

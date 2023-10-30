@@ -21,7 +21,7 @@ class Preparer:
         # Preprocess the point clouds
         processor_source = Preprocessor(source, voxel_size)
         processor_target = Preprocessor(target, voxel_size)
-        source_down, source_fpfh = processor_source.preprocess_point_cloud()
-        target_down, target_fpfh = processor_target.preprocess_point_cloud()
+        source_down = processor_source.preprocess_point_cloud()
+        target_down = processor_target.preprocess_point_cloud()
         
-        return source, target, source_down, target_down, source_fpfh, target_fpfh
+        return source, target, source_down, target_down
