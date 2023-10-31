@@ -5,7 +5,7 @@ from clusterer import Clusterer
 import open3d as o3d
 import numpy as np
 from icecream import ic
-from room_segmentation import roomSegmenter
+from room_segmentation import RoomFinder
 
 
 if __name__ == "__main__":
@@ -26,9 +26,8 @@ if __name__ == "__main__":
    
     rotation_matrix = registrator.registrate_rotation()
     
-    visualizer.draw_registration_result(source, target, rotation_matrix)
+    source.transform(rotation_matrix)
+    source_down.transform(rotation_matrix)
     
-    segmenter = roomSegmenter(source_down)
-    segmenter.load_pcd()
-    
+    room_finder = RoomFinder(source_down, target_down).getPosition()
     

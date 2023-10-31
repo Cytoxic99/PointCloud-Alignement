@@ -113,7 +113,6 @@ class Registrate:
         rotation_matrix_4x4[:3, :3] = rotation_matrix
         rotation_matrix_4x4[3, 3] = 1
 
-        Visualizer().draw_registration_result(source_plane, target_plane, rotation_matrix_4x4)
         
         return rotation_matrix_4x4
     
