@@ -15,19 +15,45 @@ if __name__ == "__main__":
     scan_path = "data\Scaled_SpatialMapping.xyz"
     voxel_size = 100
     
-    source, target, source_down, target_down = Preparer(model_path, scan_path).prepare_dataset(voxel_size)
+    floorModel, roomScan, floorModel_down, roomScan_down = Preparer(model_path, scan_path).prepare_dataset(voxel_size)
     
     #Extract Table and other features from pcd
-    #clusterer = Clusterer(target_down)
+    #clusterer = Clusterer(roomScan_down)
     #pcd, _ = clusterer.clustering()
     #visualizer.draw_pointcloud(pcd)
     
-    registrator = Registrate(source_down, target_down, voxel_size)
+    '''
+    OPTIMAL PARAMAETERS
+    x_translation = -8500
+    z_translation = -3000
+    
+    rotation_angle = np.pi*(21/36)
+
+
+    registrator = Registrate(floorModel_down, roomScan_down, voxel_size)
    
     rotation_matrix = registrator.registrate_rotation()
     
-    source.transform(rotation_matrix)
-    source_down.transform(rotation_matrix)
+    floorModel.transform(rotation_matrix)
+    floorModel_down.transform(rotation_matrix)
     
-    room_finder = RoomFinder(source_down, target_down).getPosition()
+    # Create the transformation matrix for the random translation
+    T = np.identity(4)
+    T[0, 3] = x_translation
+    T[2, 3] = z_translation
+    T[:, 0] = np.array([np.cos(rotation_angle), 0, np.sin(rotation_angle), 0])
+    T[:, 2] = np.array([-np.sin(rotation_angle), 0, np.cos(rotation_angle), 0])
+    
+    visualizer.draw_registration_result(floorModel_down, roomScan_down, T)
+    
+    '''
+    
+    registrator = Registrate(floorModel_down, roomScan_down, voxel_size)
+   
+    rotation_matrix = registrator.registrate_rotation()
+    
+    floorModel.transform(rotation_matrix)
+    floorModel_down.transform(rotation_matrix)
+    
+    room_finder = RoomFinder(floorModel_down, roomScan_down).getPosition()
     

@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 
 class Registrate:
     
-    def __init__(self,source_down, target_down, voxel_size, clusters=None) -> None:
-        self.source_down = source_down
-        self.target_down = target_down
+    def __init__(self,floorModel_down, roomScan_down, voxel_size, clusters=None) -> None:
+        self.floorModel_down = floorModel_down
+        self.roomScan_down = roomScan_down
 
         self.voxel_size = voxel_size
         self.clusters = clusters
@@ -28,11 +28,11 @@ class Registrate:
         return self.transformation_local_registration
             
         
-    def refine_registration(self, source, target, transformation, voxel_size):
+    def refine_registration(self, floorModel, roomScan, transformation, voxel_size):
         distance_threshold = voxel_size * 0.4
         
         result = o3d.pipelines.registration.registration_icp(
-            source, target, distance_threshold, transformation,
+            floorModel, roomScan, distance_threshold, transformation,
             o3d.pipelines.registration.TransformationEstimationPointToPlane())
         return result
     
@@ -40,7 +40,7 @@ class Registrate:
         best_clusters = []
         best_loss = 10000000000000
         for cluster in self.clusters:
-            loss = (ic(len(cluster.points)) - ic(len(self.source_down.points)))**2
+            loss = (ic(len(cluster.points)) - ic(len(self.floorModel_down.points)))**2
             if loss < self.voxel_size**2:
                 best_clusters.append(cluster)
         return best_clusters
@@ -77,36 +77,36 @@ class Registrate:
 
         
     def registrate_rotation(self):
-        source_plane = self.get_plane(self.source_down, 10)
-        target_plane = self.get_plane(self.target_down, 10)
+        floorModel_plane = self.get_plane(self.floorModel_down, 10)
+        roomScan_plane = self.get_plane(self.roomScan_down, 10)
         radius_normal = 10
          
          # Extract the ceiling or floor from the scan
-        #source_plane.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
-        #target_plane.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+        #floorModel_plane.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+        #roomScan_plane.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
         
         
         # Get the normal vectors
-        #source_normals = np.asarray(source_plane.normals)
-        #target_normals = np.asarray(target_plane.normals)
+        #floorModel_normals = np.asarray(floorModel_plane.normals)
+        #roomScan_normals = np.asarray(roomScan_plane.normals)
         
-        #o3d.visualization.draw_geometries([source_plane, target_plane], point_show_normal=True)
+        #o3d.visualization.draw_geometries([floorModel_plane, roomScan_plane], point_show_normal=True)
         
         # Take the median from all the normalvectors
-        #source_normal, _ = mode(source_normals, axis=0)
-        #target_normal, _ = mode(target_normals, axis=0)
+        #floorModel_normal, _ = mode(floorModel_normals, axis=0)
+        #roomScan_normal, _ = mode(roomScan_normals, axis=0)
         
-        source_normal = self.compute_normal(source_plane)
-        target_normal = self.compute_normal(target_plane)
+        floorModel_normal = self.compute_normal(floorModel_plane)
+        roomScan_normal = self.compute_normal(roomScan_plane)
         
-        ic(source_normal, target_normal)
+        ic(floorModel_normal, roomScan_normal)
         
         # Reshape the vectors, so that open3d can work with it
-        source_normal=np.reshape(source_normal, (1, -1))
-        target_normal=np.reshape(target_normal, (1, -1))
+        floorModel_normal=np.reshape(floorModel_normal, (1, -1))
+        roomScan_normal=np.reshape(roomScan_normal, (1, -1))
         
         #Scikit-function to align vectors
-        rotation_matrix, _ = R.align_vectors(source_normal, target_normal)
+        rotation_matrix, _ = R.align_vectors(floorModel_normal, roomScan_normal)
         rotation_matrix = rotation_matrix.as_matrix()
         
         rotation_matrix_4x4 = np.eye(4)

@@ -12,16 +12,16 @@ class Preparer:
     def prepare_dataset(self, voxel_size):
 
         #load models and set initial pose
-        source = o3d.io.read_point_cloud(self.model_pcd)
-        target = o3d.io.read_point_cloud(self.scan_pcd)
+        floorModel = o3d.io.read_point_cloud(self.model_pcd)
+        roomScan = o3d.io.read_point_cloud(self.scan_pcd)
         trans_init = np.asarray([[0.0, 0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 0.0],
                                 [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
-        source.transform(trans_init)
+        floorModel.transform(trans_init)
         
         # Preprocess the point clouds
-        processor_source = Preprocessor(source, voxel_size)
-        processor_target = Preprocessor(target, voxel_size)
-        source_down = processor_source.preprocess_point_cloud()
-        target_down = processor_target.preprocess_point_cloud()
+        processor_floorModel = Preprocessor(floorModel, voxel_size)
+        processor_roomScan = Preprocessor(roomScan, voxel_size)
+        floorModel_down = processor_floorModel.preprocess_point_cloud()
+        roomScan_down = processor_roomScan.preprocess_point_cloud()
         
-        return source, target, source_down, target_down
+        return floorModel, roomScan, floorModel_down, roomScan_down
