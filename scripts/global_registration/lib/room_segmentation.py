@@ -124,51 +124,11 @@ class RoomFinder():
 
         return (count_inside_volume_max - count_inside_volume_min)
     
-    def adjustCoord(self, pcd, floorModel):
-        # Access the point coordinates as a NumPy array
-        points = np.asarray(pcd.points)
-
-        if len(points) > 0:
-            # Find the index of the points with the lowest coordinates
-            min_x_index = np.argmin(points[:, 0])
-            min_y_index = np.argmin(points[:, 1])
-            min_z_index = np.argmin(points[:, 2])
-            
-
-            # Get the points with the lowest and heighest coordinates
-            lowest_x_point = points[min_x_index][0]
-            lowest_y_point = points[min_y_index][1]
-            lowest_z_point = points[min_z_index][2]
-
-            # Calculate the translation vector to move the lowest point to the origin
-            translation_vector_x = -lowest_x_point
-            translation_vector_y = -lowest_y_point
-            if floorModel:
-                translation_vector_y -= 300
-            translation_vector_z = -lowest_z_point
-
-            # Create a translation matrix
-            translation_matrix = np.identity(4)
-            translation_matrix[0, 3] = translation_vector_x
-            translation_matrix[1, 3] = translation_vector_y
-            translation_matrix[2, 3] = translation_vector_z
-
-            # Transform the original point cloud using the translation matrix
-            translated_point_cloud = pcd.transform(translation_matrix)
-            
-            # Reset the rotation of the point cloud to 0
-            rotation_matrix = np.identity(4)
-            translated_point_cloud.transform(rotation_matrix)
-
-            return translated_point_cloud
+    
     
     def getPosition(self):
         visualizer = Visualizer()
-        
-        self.floorModel = self.adjustCoord(self.floorModel, True)
-        self.roomScan = self.adjustCoord(self.roomScan, False)
         self.findBorders()
-        
         
         #visualizer.draw_registration_result(self.floorModel, self.roomScan, np.eye(4))
         n_iterations = 1000
@@ -186,7 +146,6 @@ class RoomFinder():
                 best_transform = transformation
                 ic(best_num_points)
                 ic(best_transform)
-                visualizer.draw_registration_result(self.floorModel, self.roomScan, best_transform)
             ic(i)
         
         return best_transform

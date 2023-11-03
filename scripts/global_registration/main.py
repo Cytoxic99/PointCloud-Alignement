@@ -49,12 +49,12 @@ if __name__ == "__main__":
     '''
     
     registrator = Registrate(floorModel_down, roomScan_down, voxel_size)
-   
-    rotation_matrix = registrator.registrate_rotation()
+    registration_matrix = registrator.registrate()
     
-    floorModel.transform(rotation_matrix)
-    floorModel_down.transform(rotation_matrix)
     
-    room_finder = RoomFinder(floorModel_down, roomScan_down).getPosition()
+    
+    visualizer.draw_multiple_pointclouds([floorModel_down, roomScan_down])
+    
+    #room_finder = RoomFinder(floorModel_down, roomScan_down).getPosition()
     
     

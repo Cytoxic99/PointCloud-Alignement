@@ -10,7 +10,7 @@ class Visualizer:
         roomScan_temp = copy.deepcopy(roomScan)
         floorModel_temp.paint_uniform_color([1, 0.706, 0])
         roomScan_temp.paint_uniform_color([0, 0.651, 0.929])
-        roomScan_temp.transform(transformation)
+        floorModel_temp.transform(transformation)
         o3d.visualization.draw_geometries([floorModel_temp, roomScan_temp],
                                         zoom=0.4559,
                                         front=[0.6452, -0.3036, -0.7011],
