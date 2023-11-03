@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial import distance
 import copy
 import random
-from visualizer import Visualizer
+from lib.visualizer import Visualizer
 from icecream import ic
 
 class RoomFinder():
@@ -58,15 +58,18 @@ class RoomFinder():
         self.x_max_roomScan = points_roomScan[max_x_index][0]
         self.y_max_roomScan = points_roomScan[max_y_index][1]
         self.z_max_roomScan = points_roomScan[max_z_index][2]
+        
+
     
     def is_inside(self, T):
         # copy of roomscan
         pcd_copy = copy.deepcopy(self.roomScan)
         pcd_copy.transform(T)
         
+        room_copy = copy.deepcopy(self.floorModel)
+        
         # Create your volume of interest (e.g., an axis-aligned bounding box)
-        min_bound, max_bound = self.floorModel.get_min_bound(), self.floorModel.get_max_bound()
-        aabb = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
+        aabb = room_copy.get_minimal_oriented_bounding_box()
         
         # Use crop function to extract the points inside the bounding box
         cropped_point_cloud = pcd_copy.crop(aabb)
@@ -84,11 +87,13 @@ class RoomFinder():
         i = 0
         while True:
             # Generate random translations in the x and y directions
-            x_translation = np.random.uniform(-1000, 1000)
-            z_translation = np.random.uniform(-1000, 1000)
+            x_translation = np.random.uniform(-10000, 10000)
+            z_translation = np.random.uniform(-10000, 10000)
             
-            rotation_random = random.randrange(1, 360)
-            rotation_angle = (2*np.pi) / rotation_random
+            rotation_random = random.randrange(1, 36)
+            #rotation_angle = np.pi*(21/36)
+            rotation_angle = np.pi * (rotation_random / 36)
+            
 
             # Create the transformation matrix for the random translation
             T = np.identity(4)
@@ -105,15 +110,19 @@ class RoomFinder():
         
     def pointsInside(self, roomScan_copy):
         # Create your volume of interest (e.g., an axis-aligned bounding box)
-        min_bound, max_bound = roomScan_copy.get_min_bound(), roomScan_copy.get_max_bound()
-        aabb = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
+        aabb_max = roomScan_copy.get_minimal_oriented_bounding_box(robust=True)
+        aabb_min = roomScan_copy.get_minimal_oriented_bounding_box(robust=False).scale(0.9, roomScan_copy.get_center())
+        
+        
         # Use crop function to extract the points inside the bounding box
-        cropped_point_cloud = self.floorModel.crop(aabb)
+        cropped_point_cloud_max = self.floorModel.crop(aabb_max)
+        cropped_point_cloud_min = self.floorModel.crop(aabb_min)
 
         # Get the number of points inside the volume
-        count_inside_volume = len(cropped_point_cloud.points)
+        count_inside_volume_max = len(cropped_point_cloud_max.points)
+        count_inside_volume_min = len(cropped_point_cloud_min.points)
 
-        return count_inside_volume
+        return (count_inside_volume_max - count_inside_volume_min)
     
     def adjustCoord(self, pcd, floorModel):
         # Access the point coordinates as a NumPy array
@@ -146,6 +155,11 @@ class RoomFinder():
 
             # Transform the original point cloud using the translation matrix
             translated_point_cloud = pcd.transform(translation_matrix)
+            
+            # Reset the rotation of the point cloud to 0
+            rotation_matrix = np.identity(4)
+            translated_point_cloud.transform(rotation_matrix)
+
             return translated_point_cloud
     
     def getPosition(self):
@@ -158,19 +172,22 @@ class RoomFinder():
         
         #visualizer.draw_registration_result(self.floorModel, self.roomScan, np.eye(4))
         n_iterations = 1000
-        best_num_points = 100000000000
+        best_num_points = 0
         best_transform = None
+        i = 0
         
         for i in range(n_iterations):
             transformation = self.generateTransformation()
             roomScan_copy = copy.copy(self.roomScan)  # Create a copy of the original roomscan
             roomScan_copy.transform(transformation)  # Apply the transformation to the copy
             curr_num_points = self.pointsInside(roomScan_copy)  # Calculate the points inside the transformed floorModel
-            if curr_num_points < best_num_points:
+            if curr_num_points > best_num_points:
                 best_num_points = curr_num_points
                 best_transform = transformation
                 ic(best_num_points)
                 ic(best_transform)
-        visualizer.draw_registration_result(self.floorModel, self.roomScan, best_transform)
+                visualizer.draw_registration_result(self.floorModel, self.roomScan, best_transform)
+            ic(i)
+        
         return best_transform
             

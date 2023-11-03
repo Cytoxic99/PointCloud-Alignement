@@ -1,7 +1,7 @@
 import open3d as o3d
 import numpy as np
-from visualizer import Visualizer
-from preprocesser import Preprocessor
+from lib.visualizer import Visualizer
+from lib.preprocesser import Preprocessor
 
 class Preparer:
     

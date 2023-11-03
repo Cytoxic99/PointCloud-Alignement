@@ -1,11 +1,11 @@
-from preparer import Preparer
-from visualizer import Visualizer
-from registrator import Registrate
-from clusterer import Clusterer
+from lib.preparer import Preparer
+from lib.visualizer import Visualizer
+from lib.registrator import Registrate
+from lib.clusterer import Clusterer
 import open3d as o3d
 import numpy as np
 from icecream import ic
-from room_segmentation import RoomFinder
+from lib.room_segmentation import RoomFinder
 
 
 if __name__ == "__main__":
@@ -56,4 +56,5 @@ if __name__ == "__main__":
     floorModel_down.transform(rotation_matrix)
     
     room_finder = RoomFinder(floorModel_down, roomScan_down).getPosition()
+    
     

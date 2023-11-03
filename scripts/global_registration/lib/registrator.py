@@ -1,6 +1,6 @@
 import open3d as o3d
 from icecream import ic
-from visualizer import Visualizer
+from lib.visualizer import Visualizer
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from scipy.stats import mode
