@@ -113,6 +113,8 @@ class RoomFinder():
         aabb_max = roomScan_copy.get_minimal_oriented_bounding_box(robust=True)
         aabb_min = roomScan_copy.get_minimal_oriented_bounding_box(robust=False).scale(0.9, roomScan_copy.get_center())
         
+        Visualizer().draw_multiple_pointclouds([roomScan_copy, aabb_max, aabb_min])
+        
         
         # Use crop function to extract the points inside the bounding box
         cropped_point_cloud_max = self.floorModel.crop(aabb_max)
@@ -137,7 +139,9 @@ class RoomFinder():
         i = 0
         
         for i in range(n_iterations):
+            ic()
             transformation = self.generateTransformation()
+            ic()
             roomScan_copy = copy.copy(self.roomScan)  # Create a copy of the original roomscan
             roomScan_copy.transform(transformation)  # Apply the transformation to the copy
             curr_num_points = self.pointsInside(roomScan_copy)  # Calculate the points inside the transformed floorModel

@@ -11,16 +11,17 @@ from lib.room_segmentation import RoomFinder
 if __name__ == "__main__":
     visualizer = Visualizer()
     
-    model_path = "data\DFloor.xyz"
+    model_path = "data\DFloor_raw.xyz"
     scan_path = "data\Scaled_SpatialMapping.xyz"
     voxel_size = 100
+    
     
     floorModel, roomScan, floorModel_down, roomScan_down = Preparer(model_path, scan_path).prepare_dataset(voxel_size)
     
     #Extract Table and other features from pcd
     #clusterer = Clusterer(roomScan_down)
     #pcd, _ = clusterer.clustering()
-    #visualizer.draw_pointcloud(pcd)
+    visualizer.draw_registration_result(floorModel_down, floorModel_down, np.eye(4))
     
     '''
     OPTIMAL PARAMAETERS
@@ -52,9 +53,6 @@ if __name__ == "__main__":
     registration_matrix = registrator.registrate()
     
     
-    
-    visualizer.draw_multiple_pointclouds([floorModel_down, roomScan_down])
-    
-    #room_finder = RoomFinder(floorModel_down, roomScan_down).getPosition()
+    room_finder = RoomFinder(floorModel_down, roomScan_down).getPosition()
     
     

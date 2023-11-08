@@ -168,10 +168,10 @@ class Registrate:
         adjust_matrix = self.adjustCoord()
         self.floorModel_down.transform(adjust_matrix)
         
-        floorModel_line = self.findLine(self.floorModel_down)
-        roomScan_line = self.findLine(self.roomScan_down)
+        #floorModel_line = self.findLine(self.floorModel_down)
+        #roomScan_line = self.findLine(self.roomScan_down)
         
-        registrtate_wall = self.procrustes(floorModel_line, roomScan_line)
+        #registrtate_wall = self.procrustes(floorModel_line, roomScan_line)
         #self.floorModel_down.transform(registrtate_wall)
         
         return np.dot(rotation_matrix, adjust_matrix)
