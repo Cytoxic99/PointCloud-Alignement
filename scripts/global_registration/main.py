@@ -11,13 +11,13 @@ from lib.room_segmentation import RoomFinder
 if __name__ == "__main__":
     visualizer = Visualizer()
     
-    model_path = "data\DFloor_raw.xyz"
+    model_path = "data\DFloor.xyz"
     scan_path = "data\Scaled_SpatialMapping.xyz"
     voxel_size = 100
     
     
     floorModel, roomScan, floorModel_down, roomScan_down = Preparer(model_path, scan_path).prepare_dataset(voxel_size)
-    
+    visualizer.draw_pointcloud(floorModel)
     #Extract Table and other features from pcd
     #clusterer = Clusterer(roomScan_down)
     #pcd, _ = clusterer.clustering()
