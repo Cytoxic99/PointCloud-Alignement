@@ -1,5 +1,6 @@
 import open3d as o3d
 import copy
+import matplotlib.pyplot as plt
 
 class Visualizer:
     def __init__(self) -> None:
@@ -28,3 +29,34 @@ class Visualizer:
     def draw_multiple_pointclouds(self, floorModel):
         
         o3d.visualization.draw_geometries(floorModel)
+        
+    
+    def draw_pointcloud_and_lines(self, matrix, points):
+        x = matrix[:, 0]
+        y = matrix[:, 1]
+        plt.scatter(x, y, label='Point Cloud')
+        
+        rectangle_x = [point[0] for point in points]
+        rectangle_y = [point[1] for point in points]
+        
+        # Connect the rectangle points to form a closed shape
+        rectangle_x.append(rectangle_x[0])  # Closing the shape
+        rectangle_y.append(rectangle_y[0])
+        
+        # Create lines for the rectangle
+        plt.plot(rectangle_x, rectangle_y, color='red', label='Rectangle')
+        
+        # Set labels and title
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+        plt.title('2D Point Cloud Visualization')
+        
+        # Display the legend
+        plt.legend()
+        
+        plt.show(block=False)
+        plt.pause(0.1)
+        # Close the plot
+        plt.close()
+
+        

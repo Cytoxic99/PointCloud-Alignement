@@ -7,6 +7,8 @@ from scipy.stats import mode
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 import copy
+from shapely.geometry import MultiPoint, Polygon
+import cv2
 
 class Registrate:
     
@@ -68,6 +70,18 @@ class Registrate:
         
         return rotation_matrix_4x4
         
+    def align_rotation(self):
+        floor_box = self.floorModel_down.get_oriented_bounding_box()
+        floor_rot = floor_box.R
+
+        
+        room_box = self.roomScan_down.get_oriented_bounding_box()
+        room_rot = room_box.R
+        
+        T, _, _, _ = np.linalg.lstsq(room_rot, floor_rot, rcond=None)
+
+        self.floorModel_down.rotate(T)
+        
     
     def adjustCoord(self):
         # Access the point coordinates as a NumPy array
@@ -111,70 +125,65 @@ class Registrate:
             result_matrix = np.dot(translation_matrix, rotation_matrix)
             
             return result_matrix
-        
-    def findLine(self, pcd):
-        
-        pcd_copy = copy.copy(pcd)
-        points = np.asarray(pcd_copy.points)
-
-        # Find the index of the points with the smallest x-coordinates in the xz-plane
-        min_x = np.min(points[:, 0])
-        min_y = np.min(points[points[:, 0] == min_x, 1])
-
-        min_x_indices = np.where((points[:, 0] == min_x) & (points[:, 1] == min_y))
-
-        ic(min_x_indices)
-
-
-        # Create a new point cloud with the points with the smallest x-coordinates in the xz-plane
-        smallest_x_points = o3d.geometry.PointCloud()
-        smallest_x_points.points = o3d.utility.Vector3dVector(points[min_x_indices])
-
-        # Extract the minimum and maximum x and z coordinates
-        min_x = np.min(smallest_x_points.points, axis=0)
-        max_x = np.max(smallest_x_points.points, axis=0)
-
-        # Create a line along the x-axis in the xz-plane using the minimum and maximum coordinates
-        line = o3d.geometry.LineSet()
-        line.points = o3d.utility.Vector3dVector(np.array([min_x, max_x]))
-        line.lines = o3d.utility.Vector2iVector([[0, 1]])
-        
-        return line
     
-    def procrustes(self, line1, line2):
-        # Extract points from the two lines
-        points1 = np.asarray(line1.points)
-        points2 = np.asarray(line2.points)
-
-        # Apply Procrustes analysis to find the optimal transformation matrix
-        r = R.align_vectors(points2, points1)
+    def make_2d(self, pcd):
+        pcd_copy = copy.deepcopy(pcd)
+        projected_points = np.asarray(pcd_copy.points)
+        projected_points[:, 1] = 0
+        pcd_copy.points = o3d.utility.Vector3dVector(projected_points)
         
-        rotation_matrix = r[0].as_matrix()
-        
-        rotation_matrix_4x4 = np.eye(4)
-        rotation_matrix_4x4[:3, :3] = rotation_matrix
-        rotation_matrix_4x4[3, 3] = 1
-        
-        Visualizer().draw_registration_result(line1, line2, rotation_matrix_4x4)
-        
-        return rotation_matrix_4x4
+        return pcd_copy
     
+    def rotate(self, pcd, angle_degrees):
+        # Convert angle to radians
+        angle_radians = np.radians(angle_degrees)
+        
+        # Create rotation matrix for rotation around y-axis
+        rotation_matrix = np.array([[np.cos(angle_radians), 0, np.sin(angle_radians)],
+                                    [0, 1, 0],
+                                    [-np.sin(angle_radians), 0, np.cos(angle_radians)]])
+        
+        # Apply rotation to the point cloud
+        pcd.rotate(rotation_matrix, center=(0, 0, 0))
+        
+        return rotation_matrix
+    
+
+    def get_rect(self, pcd):
+        matrix = np.asarray(pcd.points)
+        matrix_2d = np.delete(matrix.astype(np.float32), 1, axis=1)
+        
+        rect = cv2.minAreaRect(matrix_2d)
+        
+        points = cv2.boxPoints(rect)
+        
+        return points, rect[2]
+        
     
     
     def registrate(self):
+        
+        
         rotation_matrix = self.registrate_rotation()
         self.floorModel_down.transform(rotation_matrix)
         
         adjust_matrix = self.adjustCoord()
         self.floorModel_down.transform(adjust_matrix)
         
-        #floorModel_line = self.findLine(self.floorModel_down)
-        #roomScan_line = self.findLine(self.roomScan_down)
+        T = np.dot(rotation_matrix, adjust_matrix)
         
-        #registrtate_wall = self.procrustes(floorModel_line, roomScan_line)
-        #self.floorModel_down.transform(registrtate_wall)
+        floorModel_2d = self.make_2d(self.floorModel_down)
+        roomScan_2d = self.make_2d(self.roomScan_down)
         
-        return np.dot(rotation_matrix, adjust_matrix)
+        points , room_rot = self.get_rect(roomScan_2d)
+        _ , floor_rot = self.get_rect(floorModel_2d)
+        abs_rot = floor_rot - room_rot
+        
+        self.rotate(self.floorModel_down, abs_rot)
+        adjust_rot_matrix = self.rotate(floorModel_2d, abs_rot)
+        
+        
+        return T, floorModel_2d, roomScan_2d, points
     
     
     

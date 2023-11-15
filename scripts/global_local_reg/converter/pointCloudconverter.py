@@ -47,5 +47,5 @@ class pointCloudConverter:
 
 
 if __name__ == "__main__":
-    Converter = pointCloudConverter('data\Scaled_DFloor.obj', 10)
+    Converter = pointCloudConverter('data\Scaled_DFloor.obj', 100)
     Converter.obj_to_xyz_point_cloud('data\DFloor.xyz')

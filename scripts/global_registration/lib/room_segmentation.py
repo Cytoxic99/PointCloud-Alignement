@@ -86,15 +86,16 @@ class RoomFinder():
     def generateTransformation(self):
         i = 0
         while True:
+            
             # Generate random translations in the x and y directions
-            x_translation = np.random.uniform(-10000, 10000)
-            z_translation = np.random.uniform(-10000, 10000)
+            x_translation = np.random.uniform(self.x_min_floorModel, self.x_max_floorModel)
+            z_translation = np.random.uniform(self.z_min_floorModel, self.z_max_floorModel)
             
             rotation_random = random.randrange(1, 36)
             #rotation_angle = np.pi*(21/36)
             rotation_angle = np.pi * (rotation_random / 36)
             
-
+            
             # Create the transformation matrix for the random translation
             T = np.identity(4)
             T[0, 3] = x_translation
@@ -113,8 +114,6 @@ class RoomFinder():
         aabb_max = roomScan_copy.get_minimal_oriented_bounding_box(robust=True)
         aabb_min = roomScan_copy.get_minimal_oriented_bounding_box(robust=False).scale(0.9, roomScan_copy.get_center())
         
-        Visualizer().draw_multiple_pointclouds([roomScan_copy, aabb_max, aabb_min])
-        
         
         # Use crop function to extract the points inside the bounding box
         cropped_point_cloud_max = self.floorModel.crop(aabb_max)
@@ -132,6 +131,7 @@ class RoomFinder():
         visualizer = Visualizer()
         self.findBorders()
         
+        
         #visualizer.draw_registration_result(self.floorModel, self.roomScan, np.eye(4))
         n_iterations = 1000
         best_num_points = 0
@@ -139,18 +139,18 @@ class RoomFinder():
         i = 0
         
         for i in range(n_iterations):
-            ic()
             transformation = self.generateTransformation()
-            ic()
+            
             roomScan_copy = copy.copy(self.roomScan)  # Create a copy of the original roomscan
             roomScan_copy.transform(transformation)  # Apply the transformation to the copy
             curr_num_points = self.pointsInside(roomScan_copy)  # Calculate the points inside the transformed floorModel
             if curr_num_points > best_num_points:
+                visualizer.draw_multiple_pointclouds([self.floorModel, roomScan_copy])
                 best_num_points = curr_num_points
                 best_transform = transformation
                 ic(best_num_points)
                 ic(best_transform)
-            ic(i)
+                ic(i)
         
         return best_transform
             

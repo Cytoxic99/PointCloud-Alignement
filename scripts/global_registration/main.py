@@ -2,6 +2,7 @@ from lib.preparer import Preparer
 from lib.visualizer import Visualizer
 from lib.registrator import Registrate
 from lib.clusterer import Clusterer
+from lib.ransac_2d import Ransac
 import open3d as o3d
 import numpy as np
 from icecream import ic
@@ -9,6 +10,7 @@ from lib.room_segmentation import RoomFinder
 
 
 if __name__ == "__main__":
+    ic()
     visualizer = Visualizer()
     
     model_path = "data\DFloor.xyz"
@@ -17,11 +19,7 @@ if __name__ == "__main__":
     
     
     floorModel, roomScan, floorModel_down, roomScan_down = Preparer(model_path, scan_path).prepare_dataset(voxel_size)
-    visualizer.draw_pointcloud(floorModel)
-    #Extract Table and other features from pcd
-    #clusterer = Clusterer(roomScan_down)
-    #pcd, _ = clusterer.clustering()
-    visualizer.draw_registration_result(floorModel_down, floorModel_down, np.eye(4))
+    
     
     '''
     OPTIMAL PARAMAETERS
@@ -50,9 +48,11 @@ if __name__ == "__main__":
     '''
     
     registrator = Registrate(floorModel_down, roomScan_down, voxel_size)
-    registration_matrix = registrator.registrate()
+    T, floorModel_2d, roomScan_2d, points = registrator.registrate()
     
+    Ransac(floorModel_2d, roomScan_2d, points).start()
+    #transform = RoomFinder(floorModel_down, roomScan_down).getPosition()
     
-    room_finder = RoomFinder(floorModel_down, roomScan_down).getPosition()
+    ic()
     
     
