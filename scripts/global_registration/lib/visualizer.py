@@ -36,8 +36,13 @@ class Visualizer:
         y = matrix[:, 1]
         plt.scatter(x, y, label='Point Cloud')
         
-        rectangle_x = [point[0] for point in points]
-        rectangle_y = [point[1] for point in points]
+        try:
+            rectangle_x = [point[0] for point in points]
+            rectangle_y = [point[1] for point in points]
+
+        except:
+            rectangle_x = points[:, 0]
+            rectangle_y = points[:, 1]
         
         # Connect the rectangle points to form a closed shape
         rectangle_x.append(rectangle_x[0])  # Closing the shape
@@ -54,7 +59,7 @@ class Visualizer:
         # Display the legend
         plt.legend()
         
-        plt.show(block=False)
+        plt.show(block=True)
         plt.pause(0.1)
         # Close the plot
         plt.close()

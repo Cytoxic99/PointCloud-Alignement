@@ -7,6 +7,7 @@ import open3d as o3d
 import numpy as np
 from icecream import ic
 from lib.room_segmentation import RoomFinder
+from lib.segmentor import Segmentor
 
 
 if __name__ == "__main__":
@@ -46,11 +47,12 @@ if __name__ == "__main__":
     visualizer.draw_registration_result(floorModel_down, roomScan_down, T)
     
     '''
-    
     registrator = Registrate(floorModel_down, roomScan_down, voxel_size)
-    T, floorModel_2d, roomScan_2d, points = registrator.registrate()
+    T, floorModel_2d, roomScan_2d, points_floor, points_room = registrator.registrate()
+    Segmentor(floorModel_2d, points_floor).find_wall()
     
-    Ransac(floorModel_2d, roomScan_2d, points).start()
+    
+    #Ransac(floorModel_2d, roomScan_2d, points_floor, points_room).start()
     #transform = RoomFinder(floorModel_down, roomScan_down).getPosition()
     
     ic()

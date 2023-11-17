@@ -175,15 +175,15 @@ class Registrate:
         floorModel_2d = self.make_2d(self.floorModel_down)
         roomScan_2d = self.make_2d(self.roomScan_down)
         
-        points , room_rot = self.get_rect(roomScan_2d)
+        points_room , room_rot = self.get_rect(roomScan_2d)
         _ , floor_rot = self.get_rect(floorModel_2d)
         abs_rot = floor_rot - room_rot
         
         self.rotate(self.floorModel_down, abs_rot)
         adjust_rot_matrix = self.rotate(floorModel_2d, abs_rot)
+        points_floor , _ = self.get_rect(floorModel_2d)
         
-        
-        return T, floorModel_2d, roomScan_2d, points
+        return T, floorModel_2d, roomScan_2d, points_floor, points_room
     
     
     
