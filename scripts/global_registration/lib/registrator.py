@@ -32,7 +32,7 @@ class Registrate:
         best_inliers = None
         for _ in range(max_iterations):
             # Plane model segmentation with RANSAC
-            plane_model, inliers = pcd.segment_plane(100, ransac_n=3,num_iterations=10000)
+            plane_model, inliers = pcd.segment_plane(100, ransac_n=4,num_iterations=10000)
             
             if best_inliers == None:
                 best_inliers = inliers

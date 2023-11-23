@@ -4,7 +4,69 @@ import open3d as o3d
 from lib.visualizer import Visualizer
 from icecream import ic
 import copy
+import threading
+from shapely.geometry import Point, Polygon, box
+from shapely.ops import unary_union
 
+def split_bounding_box(pointcloud):
+    # Extract the bounding box coordinates
+    min_x = min(point[0] for point in pointcloud)
+    min_y = min(point[1] for point in pointcloud)
+    max_x = max(point[0] for point in pointcloud)
+    max_y = max(point[1] for point in pointcloud)
+
+    # Define the number dof steps for x and y
+    num_steps = 5
+
+    # Calculate evenly spaced x and y values within the bounding box
+    x_values = np.linspace(min_x, max_x, num_steps)
+    y_values = np.linspace(min_y, max_y, num_steps)
+    
+    x_values = x_values[: -1]
+    y_values = y_values[: -1]
+
+    # Create a list of (x, y) coordinates representing the evenly spaced grid
+    grid_coordinates = [(x, y) for x in x_values for y in y_values]
+
+    return grid_coordinates
+
+def is_rectangle_inside_pointcloud(rectangle_points, pointcloud_points):
+    # Convert rectangle points to a Shapely Polygon
+    rectangle_polygon = Polygon(rectangle_points)
+
+    # Get the bounding box of the point cloud
+    min_x = min(pointcloud_points[:, 0])
+    min_y = min(pointcloud_points[:, 1])
+    max_x = max(pointcloud_points[:, 0])
+    max_y = max(pointcloud_points[:, 1])
+
+    # Create a bounding box around the point cloud
+    pointcloud_bounding_box = Polygon([(min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)])
+
+    # Check if all rectangle vertices are inside the point cloud bounding box
+    if not rectangle_polygon.within(pointcloud_bounding_box):
+        return False
+
+    # If all points are inside the point cloud bounding box, return True
+    return True
+
+
+#Should return True if there is a certain density of points along the line reached
+def line_reached(rectangle, indices, count):
+    base = 1
+    distance = abs(math.dist(rectangle[indices[0]], rectangle[indices[1]]))
+    while not (int(distance/base) < 10 and int(distance/base) >= 1):
+        base *= 10  
+    if base < 101:
+        return count > distance/base
+    
+    else:
+        return count > distance/(base/10)
+
+
+#checks all the line aagain when the rectangle is finished
+def overall_checker(i_upper, i_lower, I_left, i_right):
+    pass
 
 def count_points_on_line(matrix, points, tolerance=105):
     x1, y1 = points[0]
@@ -46,89 +108,99 @@ def get_indices(rectangle):
 
 
 def grow_upper(rectangle, matrix, indices, angle, step):
-    counter = 0
+    grown = False
     while True:
+        counter = count_points_on_line(matrix, rectangle[indices])
+        if  line_reached(rectangle, indices, counter):
+            ic("Line reached!")
+            break
         add_matrix = np.zeros((4, 2))
         
         add_matrix[indices, 1] += step
         add_matrix = rotate(add_matrix, angle)
 
         rectangle += add_matrix
-        distance = abs(math.dist(rectangle[indices][0], rectangle[indices][1]))
-        counter += count_points_on_line(matrix, rectangle[indices])
-        if  counter > distance/10:
-            break
+        grown = True
         
-    return rectangle
+    return grown
 
 def grow_lower(rectangle, matrix, indices, angle, step):
-    counter = 0
+    grown = False
     while True:
+        counter = count_points_on_line(matrix, rectangle[indices])
+        if  line_reached(rectangle, indices, counter):
+            ic("Line reached!")
+            break
         add_matrix = np.zeros((4, 2))
         
         add_matrix[indices, 1] -= step
         add_matrix = rotate(add_matrix, angle)
 
         rectangle += add_matrix
-        distance = abs(math.dist(rectangle[indices][0], rectangle[indices][1]))
-        counter += count_points_on_line(matrix, rectangle[indices])
-        if  counter > distance/10:
-            break
+        grown = True
         
-    return rectangle
+        
+        
+    return grown
 
 def grow_left(rectangle, matrix, indices, angle, step):
-    
+    grown = False
     while True:
+        counter = count_points_on_line(matrix, rectangle[indices])
+        if  line_reached(rectangle, indices, counter):
+            ic("Line reached!")
+            break
+        
         add_matrix = np.zeros((4, 2))
         
         add_matrix[indices, 0] -= step
         add_matrix = rotate(add_matrix, angle)
 
         rectangle += add_matrix
-        distance = abs(math.dist(rectangle[indices][0], rectangle[indices][1]))
-        counter = count_points_on_line(matrix, rectangle[indices])
-        if  counter > distance/100:
-            ic(distance)
-            break
+        grown = True
         
-    return rectangle
+        
+    return grown
 
 def grow_right(rectangle, matrix, indices, angle, step):
-    
+    grown = False
     while True:
-        add_matrix = np.zeros((4, 2))
+        counter = count_points_on_line(matrix, rectangle[indices])
+        if  line_reached(rectangle, indices, counter):
+            ic("Line reached!")
+            break
         
-        sorted_indices = np.argsort(rectangle[:, 0])
-        #horizontal_points = rectangle[sorted_indices[2:]]
+        add_matrix = np.zeros((4, 2))
         
         add_matrix[indices, 0] += step
         add_matrix = rotate(add_matrix, angle)
 
         rectangle += add_matrix
-        distance = abs(math.dist(rectangle[indices][0], rectangle[indices][1]))
-        counter = count_points_on_line(matrix, rectangle[indices])
-        if  counter > distance/100:
-            ic(distance)
-            break
+        grown = True
         
-    return rectangle
+        
+    return grown
 
 def grow_rectangle(rectangle, matrix, angle, step=10):
     i_upper, i_lower, i_left, i_right = get_indices(rectangle)
     
-    #grow_right(rectangle, matrix, i_right, angle, step)
-    #Visualizer().draw_pointcloud_and_lines(matrix, rectangle)
-    #grow_left(rectangle, matrix, i_left, angle, step)
-    #Visualizer().draw_pointcloud_and_lines(matrix, rectangle)
-    grow_upper(rectangle, matrix, i_upper, angle, step)
+    while True:
+        grown = False
+        if grow_upper(rectangle, matrix, i_upper, angle, step):
+            grown = True
     
-    grow_lower(rectangle, matrix, i_lower, angle, step)
-   
-    grow_right(rectangle, matrix, i_right, angle, step)
+        if grow_lower(rectangle, matrix, i_lower, angle, step):
+            grown = True
     
-    grow_left(rectangle, matrix, i_left, angle, step)
-    Visualizer().draw_pointcloud_and_lines(matrix, rectangle)
+        if grow_right(rectangle, matrix, i_right, angle, step):
+            grown = True
+    
+        if grow_left(rectangle, matrix, i_left, angle, step):
+            grown = True
+            
+        if not grown:
+            break
+
     
         
     return rectangle
@@ -146,12 +218,64 @@ def rotate(rectangle, angle):
                                 [np.sin(angle), np.cos(angle)]])
     
     return np.dot(rectangle, rotation_matrix)
+
+def is_point_in_rectangle(matrix, rectangle):
+    # Convert rectangle points to a Shapely Polygon
+    rectangle_polygon = Polygon(rectangle)
+
+    # Initialize a counter for points inside the rectangle
+    points_inside_count = 0
+
+    # Iterate through each point in the matrix
+    for row in matrix:
+        point = Point(row[0], row[1])
+        if rectangle_polygon.contains(point):
+            return True
+
+    return False
+
+def merge_intersecting_rectangles(rectangles):
+    # Convert rectangle points to Shapely Polygons
+    rectangles_polygons = [Polygon(rectangle) for rectangle in rectangles]
+
+    # Use unary_union to merge intersecting polygons
+    merged_polygon = unary_union(rectangles_polygons)
+    
+    edge_points = []
+    # Iterate through each polygon in the MultiPolygon
+    for polygon in merged_polygon.geoms:
+        # Get the exterior (outer ring) of the polygon
+        exterior = polygon.exterior
+
+        # Extract the coordinates of the exterior ring
+        exterior_coords = list(exterior.coords)
+
+        # Append the coordinates to the list of edge points
+        edge_points.extend(exterior_coords)
+
+    return edge_points
+    
     
 
 class Segmentor:
     def __init__(self, floorModel, points) -> None:
         self.floorModel = floorModel
         self.points = points
+        
+        
+    def is_rectangle_inside_pointcloud(self, rectangle_points, pointcloud_points):
+        # Convert rectangle points to a Shapely Polygon
+        rectangle_polygon = Polygon(rectangle_points)
+
+        # Create a bounding box around the point cloud
+        pointcloud_bounding_box = Polygon(self.points)
+
+        # Check if all rectangle vertices are inside the point cloud bounding box
+        if not rectangle_polygon.within(pointcloud_bounding_box):
+            return False
+
+        # If all points are inside the point cloud bounding box, return True
+        return True
         
         
     def get_angle(self):
@@ -169,18 +293,55 @@ class Segmentor:
         
         return pcd_matrix
     
-    def find_wall(self):
+    def find_rooms(self, rectangle, rectangles, x, y, rectangles_init):
         angle = self.get_angle()
-        ic(np.cos(np.pi/2))
         floorModel_matrix = self.prepare_matrix(self.floorModel.points)
         
+        rectangle = translate(rectangle, x, y)
+        rectangle_rotated = rotate(rectangle, -angle)
+        if self.is_rectangle_inside_pointcloud(rectangle_rotated, floorModel_matrix) and not is_point_in_rectangle(floorModel_matrix, rectangle_rotated):
+            rectangles_init.append(copy.deepcopy(rectangle_rotated))
+        
+            rectangle = grow_rectangle(rectangle_rotated, floorModel_matrix, -angle)
+
+            rectangles.append(rectangle)
+            
+        
+        else:
+            ic("not inside!")
+        
+        
+    def start(self):
+        visualizer = Visualizer()
+        rectangles = []
+        rectangles_init = []
         #initialize rectangle
         rectangle = np.array([[0, 0], [200, 0], [200, 200], [0, 200]])
-        rectangle = translate(rectangle, 7000, 1000)
-        rectangle_rotated = rotate(rectangle, -angle)
-        Visualizer().draw_pointcloud_and_lines(floorModel_matrix, rectangle_rotated)
         
-        rectangle = grow_rectangle(rectangle_rotated, floorModel_matrix, -angle)
-    
+        floorModel_matrix = self.prepare_matrix(self.floorModel.points)
+        
+        # Use the split_bounding_box function to generate grid coordinates
+        grid_coordinates = split_bounding_box(floorModel_matrix)
+
+        threads = []
+        for x, y in grid_coordinates:
+            thread = threading.Thread(target=self.find_rooms, args=(copy.deepcopy(rectangle), rectangles, x, y, rectangles_init))
+            threads.append(thread)
+            
+        # Start all threads
+        for thread in threads:
+            thread.start()
+
+        # Wait for all threads to finish
+        for thread in threads:
+            thread.join()
+            
+        return rectangles
+            
         
         
+        Visualizer().draw_pointcloud_and_rectangles(floorModel_matrix, rectangles_init)
+        Visualizer().draw_pointcloud_and_rectangles(floorModel_matrix, rectangles)
+        
+        merged_rectangles = merge_intersecting_rectangles(rectangles)
+        Visualizer().draw_pointcloud_and_rectangles(floorModel_matrix, merged_rectangles)

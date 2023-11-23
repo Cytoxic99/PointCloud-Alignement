@@ -1,13 +1,12 @@
 from lib.preparer import Preparer
 from lib.visualizer import Visualizer
 from lib.registrator import Registrate
-from lib.clusterer import Clusterer
-from lib.ransac_2d import Ransac
-import open3d as o3d
 import numpy as np
 from icecream import ic
-from lib.room_segmentation import RoomFinder
 from lib.segmentor import Segmentor
+from lib.globale_placement import Global
+from lib.local_placement import Local
+import os
 
 
 if __name__ == "__main__":
@@ -48,8 +47,22 @@ if __name__ == "__main__":
     
     '''
     registrator = Registrate(floorModel_down, roomScan_down, voxel_size)
-    T, floorModel_2d, roomScan_2d, points_floor, points_room = registrator.registrate()
-    Segmentor(floorModel_2d, points_floor).find_wall()
+    T_reg, floorModel_2d, roomScan_2d, points_floor, points_room = registrator.registrate()
+    
+    if not os.path.exists('rectangles.npy'):
+        rectangles = Segmentor(floorModel_2d, points_floor).start()
+        # Save the array to a file
+        np.save('rectangles.npy', rectangles)
+    else:
+        rectangles = np.load('rectangles.npy')
+    
+    angle = Segmentor(floorModel_2d, points_floor).get_angle()
+        
+    T_place, rectangle = Global(rectangles, points_room).start()
+    
+    
+    Local(floorModel_2d, roomScan_2d, rectangle, points_room, angle).start()
+    
     
     
     #Ransac(floorModel_2d, roomScan_2d, points_floor, points_room).start()
