@@ -16,7 +16,7 @@ def split_bounding_box(pointcloud):
     max_y = max(point[1] for point in pointcloud)
 
     # Define the number dof steps for x and y
-    num_steps = 5
+    num_steps = 10
 
     # Calculate evenly spaced x and y values within the bounding box
     x_values = np.linspace(min_x, max_x, num_steps)
@@ -336,12 +336,13 @@ class Segmentor:
         for thread in threads:
             thread.join()
             
-        return rectangles
+        
             
         
         
         Visualizer().draw_pointcloud_and_rectangles(floorModel_matrix, rectangles_init)
         Visualizer().draw_pointcloud_and_rectangles(floorModel_matrix, rectangles)
+        return rectangles
         
         merged_rectangles = merge_intersecting_rectangles(rectangles)
         Visualizer().draw_pointcloud_and_rectangles(floorModel_matrix, merged_rectangles)

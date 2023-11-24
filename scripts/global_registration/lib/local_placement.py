@@ -3,6 +3,7 @@ import numpy as np
 import copy
 from lib.visualizer import Visualizer
 from icecream import ic
+import open3d as o3d
 
 
 def get_rotation_matrices():
@@ -29,11 +30,10 @@ def get_rotation_matrices():
             
     return rotations
 
-def apply_rotation(floorModel_2d, rectangle, matrix, angle):
+def apply_rotation_2d(floorModel_2d, rectangle, matrix, angle):
 
     rectangle = np.insert(rectangle, 1, 0, axis=1)
     center = np.mean(rectangle, axis=0)
-    ic(center)
     rectangle = np.delete(rectangle, 1, axis=1)
     
     R_origin = Rotation.from_euler('y', angle, degrees=False).as_matrix()
@@ -47,31 +47,63 @@ def apply_rotation(floorModel_2d, rectangle, matrix, angle):
     
     T_real = np.eye(4)
     T_real[:3, 3] = center
-    ic(T_origin, T_real)
-    
-    
-    floorModel_2d.transform(T_origin)
-    
-    floorModel_2d.rotate(R_origin)
-    
-    floorModel_2d.transform(R)
-    
-    floorModel_2d.rotate(R_real)
-    
-    floorModel_2d.transform(T_real)
     
     floorModel_matrix = np.asarray(floorModel_2d.points)
+    
+    floorModel_matrix[:,:] -= center
+    floorModel_matrix = np.dot(floorModel_matrix, R_origin.T)
+    floorModel_matrix = np.dot(floorModel_matrix, matrix.T)
+    floorModel_matrix = np.dot(floorModel_matrix, R_real.T)
+    floorModel_matrix[:,:] += center
+    
     # Insert zeros at the second column
     floorModel_matrix = np.delete(floorModel_matrix, 1, axis=1)
     
-    Visualizer().draw_pointcloud_and_lines(floorModel_matrix, rectangle)
+    #Visualizer().draw_pointcloud_and_lines(floorModel_matrix, rectangle)
     
+def apply_rotation_3d(floorModel, roomScan, rectangle, matrix, angle):
+
+    rectangle = np.insert(rectangle, 1, 0, axis=1)
+    center = np.mean(rectangle, axis=0)
+    rectangle = np.delete(rectangle, 1, axis=1)
+    
+    R_origin = Rotation.from_euler('y', angle, degrees=False).as_matrix()
+    R_real = Rotation.from_euler('y', -angle, degrees=False).as_matrix()
+    
+    R = np.eye(4)
+    R[:3, :3] = matrix
+    
+    T_origin = np.eye(4)
+    T_origin[:3, 3] = -center
+    
+    T_real = np.eye(4)
+    T_real[:3, 3] = center
+    
+    floorModel_matrix = np.asarray(floorModel.points)
+    
+    floorModel_matrix[:,:] -= center
+    floorModel_matrix = np.dot(floorModel_matrix, R_origin.T)
+    floorModel_matrix = np.dot(floorModel_matrix, matrix.T)
+    floorModel_matrix = np.dot(floorModel_matrix, R_real.T)
+    floorModel_matrix[:,:] += center
+    
+    # Set the points of the PointCloud using the NumPy array
+    floorModel.points = o3d.utility.Vector3dVector(floorModel_matrix)
+    dists = floorModel.compute_point_cloud_distance(roomScan)
+    dists = np.asarray(dists)
+    dists = np.mean(dists)
+    ic(dists)
+    
+    Visualizer().draw_multiple_pointclouds([floorModel, roomScan])
+    return dists
     
     
 
 class Local:
     
-    def __init__(self, floorModel_2d, roomScan_2d, rectangle, points_room, angle) -> None:
+    def __init__(self, floorModel, roomScan, floorModel_2d, roomScan_2d, rectangle, points_room, angle) -> None:
+        self.floorModel = floorModel
+        self.roomScan = roomScan
         self.floorModel_2d = floorModel_2d
         self.roomScan_2d = roomScan_2d
         self.rectangle = rectangle
@@ -80,7 +112,9 @@ class Local:
         
     def registrate(self, matrices):
         for matrix in matrices:
-            apply_rotation(copy.deepcopy(self.floorModel_2d), copy.deepcopy(self.rectangle), matrix, self.angle)
+            apply_rotation_2d(copy.deepcopy(self.floorModel_2d), copy.deepcopy(self.rectangle), matrix, self.angle)
+            apply_rotation_3d(copy.deepcopy(self.floorModel), copy.deepcopy(self.roomScan), copy.deepcopy(self.rectangle), matrix, self.angle)
+            
             
             
     def start(self):

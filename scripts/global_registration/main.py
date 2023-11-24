@@ -61,7 +61,7 @@ if __name__ == "__main__":
     T_place, rectangle = Global(rectangles, points_room).start()
     
     
-    Local(floorModel_2d, roomScan_2d, rectangle, points_room, angle).start()
+    Local(floorModel_down, roomScan_down, floorModel_2d, roomScan_2d, rectangle, points_room, angle).start()
     
     
     
